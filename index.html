@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Student Performance Analyzer</title><link rel="stylesheet" th:href="@{/style.css}">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script></head>
+<body>
+<header><a class="title" th:href="@{/}"><h1>Student Performance Analyzer</h1></a><a class="btn" th:href="@{/new}">Add student</a></header>
+<main>
+<form class="search" method="get" th:action="@{/}">
+  <input name="q" th:value="${q}" placeholder="Search by ID, name or class/section (e.g. 10-A)">
+  <button class="btn" type="submit">Search</button><a class="btn ghost" th:href="@{/}" th:if="${!q.isEmpty()}">Clear</a>
+</form>
+
+<div th:if="${sum.count() == 0}"><p>No students found. <a th:href="@{/new}">Add a student</a> to see their analysis.</p></div>
+
+<th:block th:if="${sum.count() > 0}">
+  <h2>Class summary <small th:if="${!q.isEmpty()}" th:text="'for &quot;' + ${q} + '&quot;'"></small></h2>
+  <div class="stats">
+    <div class="stat"><b th:text="${sum.count()}"></b><small>Students</small></div>
+    <div class="stat"><b th:text="${#numbers.formatDecimal(sum.average(),1,1)} + '%'"></b><small>Class average</small></div>
+    <div class="stat"><b th:text="${#numbers.formatDecimal(sum.highest().percentage(),1,1)} + '%'"></b><small th:text="'Highest: ' + ${sum.highest().name()}"></small></div>
+    <div class="stat"><b th:text="${#numbers.formatDecimal(sum.lowest().percentage(),1,1)} + '%'"></b><small th:text="'Lowest: ' + ${sum.lowest().name()}"></small></div>
+    <div class="stat"><b th:text="${sum.passed()} + ' / ' + ${sum.count()}"></b><small>Passed</small></div>
+  </div>
+  <h2>Top performers</h2>
+  <table>
+    <tr><th>Rank</th><th>Name</th><th>Class</th><th>Percentage</th><th>Grade</th></tr>
+    <tr th:each="t, i : ${sum.top()}">
+      <td th:text="${i.count}"></td>
+      <td><a th:href="@{/student/{id}(id=${t.id()})}" th:text="${t.name()}"></a></td>
+      <td th:text="${t.section()}"></td>
+      <td th:text="${#numbers.formatDecimal(t.percentage(),1,1)}"></td>
+      <td class="grade" th:text="${t.grade()}"></td>
+    </tr>
+  </table>
+
+  <h2>Subject analysis</h2>
+  <div class="alert" th:if="${!sum.weakestSubject().isEmpty()}"
+       th:text="'Weakest subject for this group: ' + ${sum.weakestSubject()} + ' (average ' + ${#numbers.formatDecimal(sum.subjectAverages().get(sum.weakestSubject()),1,1)} + ')'"></div>
+  <table>
+    <tr><th>Subject</th><th>Class average</th><th>Students below 50</th></tr>
+    <tr th:each="e : ${sum.subjectAverages()}">
+      <td th:text="${e.key}"></td>
+      <td th:text="${#numbers.formatDecimal(e.value,1,1)}"></td>
+      <td th:text="${sum.weakCounts().get(e.key) ?: 0}"></td>
+    </tr>
+  </table>
+
+  <h2>Average marks by subject</h2>
+  <div class="chart"><canvas id="subjects"></canvas></div>
+
+  <h2>Students</h2>
+  <table>
+    <tr><th>ID</th><th>Name</th><th>Class</th><th>Total</th><th>%</th><th>Grade</th><th>Weak subjects</th><th></th></tr>
+    <tr th:each="s : ${students}">
+      <td th:text="${s.id()}"></td>
+      <td><a th:href="@{/student/{id}(id=${s.id()})}" th:text="${s.name()}"></a></td>
+      <td th:text="${s.section()}"></td>
+      <td th:text="${#numbers.formatDecimal(s.total(),1,0)} + ' / ' + ${s.maxTotal()}"></td>
+      <td th:text="${#numbers.formatDecimal(s.percentage(),1,1)}"></td>
+      <td class="grade" th:text="${s.grade()}"></td>
+      <td th:class="${s.weakSubjects().isEmpty()} ? 'ok' : 'weak'"
+          th:text="${s.weakSubjects().isEmpty()} ? 'None' : ${#strings.listJoin(s.weakSubjects(), ', ')}"></td>
+      <td><a th:href="@{/edit/{id}(id=${s.id()})}">Edit</a></td>
+    </tr>
+  </table>
+</th:block>
+</main>
+<script th:inline="javascript" th:if="${sum.count() > 0}">
+new Chart(document.getElementById('subjects'), {
+  type: 'bar',
+  data: { labels: /*[[${sum.subjectAverages().keySet()}]]*/ [],
+          datasets: [{ label: 'Average marks', data: /*[[${sum.subjectAverages().values()}]]*/ [], backgroundColor: '#16353a' }] },
+  options: { maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } } }
+});
+</script>
+</body></html>

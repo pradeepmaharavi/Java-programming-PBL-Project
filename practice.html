@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Practice questions</title><link rel="stylesheet" th:href="@{/style.css}"></head>
+<body>
+<header><a class="title" th:href="@{/}"><h1>Student Performance Analyzer</h1></a></header>
+<main style="max-width:760px">
+<h2 style="font-size:1.4rem" th:text="${subject} + ': ' + ${topic}"></h2>
+<p th:text="${s.name()} + ' scored ' + ${#numbers.formatDecimal(mark,1,0)} + ' in ' + ${subject} + '. Try these questions on this topic.'"></p>
+<ol class="q">
+  <li th:each="q : ${questions}">
+    <p th:text="${q}"></p>
+    <textarea rows="3" placeholder="Write your answer here"></textarea>
+  </li>
+</ol>
+<p><small>Answers are not saved. Note the questions you could not answer and revise those points first, then try again.</small></p>
+<div class="actions">
+  <a class="btn" th:href="@{/student/{id}(id=${s.id()})}">Back to report</a>
+</div>
+</main>
+</body></html>

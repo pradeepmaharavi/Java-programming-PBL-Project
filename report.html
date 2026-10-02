@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title th:text="'Report - ' + ${s.name()}">Report</title><link rel="stylesheet" th:href="@{/style.css}">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script></head>
+<body>
+<header><a class="title" th:href="@{/}"><h1>Student Performance Analyzer</h1></a></header>
+<main>
+<h2 style="font-size:1.6rem" th:text="${s.name()}"></h2>
+<p th:text="'ID ' + ${s.id()} + '  |  Class ' + ${s.section()}"></p>
+<p><b th:text="'Rank ' + ${rank.position()} + ' of ' + ${rank.of()} + ' in class ' + ${s.section()}"></b></p>
+
+<div class="stats">
+  <div class="stat"><b th:text="${#numbers.formatDecimal(s.total(),1,0)} + ' / ' + ${s.maxTotal()}"></b><small>Total</small></div>
+  <div class="stat"><b th:text="${#numbers.formatDecimal(s.average(),1,1)}"></b><small>Average</small></div>
+  <div class="stat"><b th:text="${#numbers.formatDecimal(s.percentage(),1,1)} + '%'"></b><small>Percentage</small></div>
+  <div class="stat"><b th:text="${s.grade()}"></b><small th:text="${s.passed()} ? 'Pass' : 'Fail'"></small></div>
+</div>
+
+<div class="alert" th:if="${!s.weakSubjects().isEmpty()}"
+     th:text="'Needs attention (below 50): ' + ${#strings.listJoin(s.weakSubjects(), ', ')}"></div>
+<div class="good" th:if="${s.weakSubjects().isEmpty()}">No weak subjects. Every subject is 50 or above.</div>
+
+<p th:if="${!s.insight().isEmpty()}" th:text="${s.insight()}"></p>
+
+<h2>Subject-wise performance</h2>
+<table>
+  <tr><th>Subject</th><th>Marks</th><th>Grade</th><th style="width:22%">Score</th><th>What to do</th></tr>
+  <tr th:each="e : ${s.marks()}">
+    <td th:text="${e.key}"></td>
+    <td th:text="${#numbers.formatDecimal(e.value,1,1)}"></td>
+    <td class="grade" th:text="${s.gradeFor(e.value)}"></td>
+    <td><div class="bar"><i th:classappend="${e.value < 50} ? 'low'" th:style="'width:' + ${e.value} + '%'"></i></div></td>
+    <td th:text="${s.tip(e.value)}"></td>
+  </tr>
+</table>
+
+<th:block th:if="${!s.focusPlan().isEmpty()}">
+<h2>Where to spend extra study time</h2>
+<table>
+  <tr><th>Subject</th><th>Now</th><th>Aim for</th><th>Marks to gain</th><th>Share of extra study time</th></tr>
+  <tr th:each="f : ${s.focusPlan()}">
+    <td th:text="${f.subject()}"></td>
+    <td th:text="${#numbers.formatDecimal(f.marks(),1,0)}"></td>
+    <td th:text="${#numbers.formatDecimal(f.target(),1,0)}"></td>
+    <td th:text="'+' + ${#numbers.formatDecimal(f.gap(),1,0)}"></td>
+    <td th:text="${f.timeShare()} + '%'"></td>
+  </tr>
+</table>
+<p><small>"Aim for" is the next grade boundary. The time share is a suggestion based on how far each subject is from 75.</small></p>
+</th:block>
+<div class="good" th:if="${s.focusPlan().isEmpty()}">Every subject is 75 or above. Keep up the current routine.</div>
+
+<th:block th:if="${!s.focusPlan().isEmpty()}">
+<h2>Practice questions</h2>
+<p>Choose a subject you want to improve and tell us the topic you find hard. You will get practice questions on it.</p>
+<form class="search" method="get" th:action="@{/student/{id}/practice(id=${s.id()})}">
+  <select name="subject">
+    <option th:each="f : ${s.focusPlan()}" th:value="${f.subject()}"
+            th:text="${f.subject()} + ' (' + ${#numbers.formatDecimal(f.marks(),1,0)} + ')'"></option>
+  </select>
+  <input name="topic" required placeholder="Topic, e.g. Quadratic equations">
+  <button class="btn" type="submit">Get questions</button>
+</form>
+</th:block>
+
+<h2>Performance chart</h2>
+<div class="chart"><canvas id="perf"></canvas></div>
+
+<div class="actions">
+  <button class="btn" onclick="window.print()">Print report</button>
+  <a class="btn ghost" th:href="@{/edit/{id}(id=${s.id()})}">Edit student</a>
+  <form th:action="@{/delete/{id}(id=${s.id()})}" method="post" onsubmit="return confirm('Delete this student?')">
+    <button class="btn danger" type="submit">Delete</button></form>
+</div>
+</main>
+<script th:inline="javascript">
+const labels = /*[[${s.subjects()}]]*/ [];
+const vals = /*[[${s.scores()}]]*/ [];
+new Chart(document.getElementById('perf'), {
+  type: 'bar',
+  data: { labels, datasets: [{ label: 'Marks', data: vals,
+          backgroundColor: vals.map(v => v < 50 ? '#b3261e' : '#16353a') }] },
+  options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 100 } } }
+});
+</script>
+</body></html>

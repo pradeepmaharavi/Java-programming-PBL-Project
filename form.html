@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Student form</title><link rel="stylesheet" th:href="@{/style.css}"></head>
+<body>
+<header><a class="title" th:href="@{/}"><h1>Student Performance Analyzer</h1></a></header>
+<main style="max-width:640px">
+<h2 th:text="${f.editing()} ? 'Edit student' : 'Register a student and enter marks'"></h2>
+<div class="alert" th:if="${errors != null}"><b>Please fix the following:</b>
+  <ul><li th:each="e : ${errors}" th:text="${e}"></li></ul></div>
+<form th:action="@{/save}" method="post">
+  <input type="hidden" name="editing" th:value="${f.editing()}">
+  <label>Student ID<input name="id" required th:value="${f.id()}" th:readonly="${f.editing()}" placeholder="S106"></label>
+  <label>Name<input name="name" required th:value="${f.name()}"></label>
+  <label>Class / section<input name="section" required th:value="${f.section()}" placeholder="10-A"></label>
+  <h2>Marks (out of 100)</h2>
+  <div id="rows">
+    <div class="row" th:each="r : ${f.rows()}">
+      <input name="subject" th:value="${r.subject()}" placeholder="Subject">
+      <input name="mark" type="number" min="0" max="100" step="0.5" th:value="${r.mark()}">
+    </div>
+  </div>
+  <div class="actions">
+    <button type="button" class="btn ghost" onclick="addRow()">Add subject</button>
+    <button type="submit" class="btn" th:text="${f.editing()} ? 'Save changes' : 'Save student'"></button>
+    <a class="btn ghost" th:href="@{/}">Cancel</a>
+  </div>
+  <p><small>To remove a subject, clear its name and mark. The ID cannot be changed when editing.</small></p>
+</form>
+</main>
+<script>
+function addRow(){
+  const d=document.createElement('div');d.className='row';
+  d.innerHTML='<input name="subject" placeholder="Subject"><input name="mark" type="number" min="0" max="100" step="0.5">';
+  document.getElementById('rows').appendChild(d);
+}
+</script>
+</body></html>
